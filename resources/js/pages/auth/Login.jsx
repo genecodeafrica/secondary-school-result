@@ -15,8 +15,8 @@ export default function Login() {
     const location = useLocation();
 
     const [form, setForm] = useState({
-        email: 'admin@school.test',
-        password: 'Admin@12345',
+	email: '',
+	password: '',
     });
 
     const [error, setError] = useState('');
