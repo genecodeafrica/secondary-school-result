@@ -1,0 +1,353 @@
+
+.school-settings-page {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    color: #172033;
+}
+
+.school-settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.school-settings-header h1 {
+    margin: 5px 0 6px;
+    color: #14213d;
+    font-size: 27px;
+    font-weight: 750;
+}
+
+.school-settings-header p,
+.school-settings-panel-heading p {
+    margin: 0;
+    color: #718096;
+    font-size: 13px;
+}
+
+.school-settings-eyebrow {
+    color: #159b72;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 1.3px;
+}
+
+.school-settings-save,
+.school-settings-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 8px;
+    background: #07966c;
+    color: #fff;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    transition: 0.2s ease;
+}
+
+.school-settings-save:hover {
+    background: #067b59;
+}
+
+.school-settings-save:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.school-settings-panel {
+    overflow: hidden;
+    border: 1px solid #e7ecf2;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 3px 14px rgba(20, 35, 60, 0.035);
+}
+
+.school-settings-panel-heading {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 20px 22px;
+    border-bottom: 1px solid #edf0f4;
+}
+
+.school-settings-panel-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    background: #e5f8f0;
+    color: #07966c;
+    font-size: 17px;
+}
+
+.school-settings-panel-icon.contact {
+    background: #eaf2ff;
+    color: #3974ce;
+}
+
+.school-settings-panel-heading h2 {
+    margin: 0 0 5px;
+    color: #17243c;
+    font-size: 16px;
+    font-weight: 750;
+}
+
+.school-settings-logo-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 24px;
+}
+
+.school-settings-logo-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 105px;
+    height: 105px;
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 1px dashed #cbd8e2;
+    border-radius: 12px;
+    background: #f7fafc;
+    color: #07966c;
+    font-size: 35px;
+}
+
+.school-settings-logo-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 7px;
+}
+
+.school-settings-logo-info strong {
+    color: #24354c;
+    font-size: 13px;
+}
+
+.school-settings-logo-info p {
+    margin: 6px 0 12px;
+    color: #7b8798;
+    font-size: 11px;
+    line-height: 1.6;
+}
+
+.school-settings-logo-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.school-settings-secondary {
+    min-height: 34px;
+    padding: 0 12px;
+    border: 1px solid #dce4ec;
+    background: #fff;
+    color: #344256;
+}
+
+.school-settings-secondary:hover {
+    background: #f5f8fb;
+}
+
+.school-settings-remove {
+    padding: 5px;
+    border: 0;
+    background: transparent;
+    color: #bf514b;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.school-settings-divider {
+    height: 1px;
+    margin: 0 22px;
+    background: #edf0f4;
+}
+
+.school-settings-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    padding: 23px;
+}
+
+.school-settings-field {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 8px;
+    color: #35445a;
+    font-size: 11px;
+    font-weight: 750;
+}
+
+.school-settings-field > span b {
+    color: #dc5c53;
+}
+
+.school-settings-field input,
+.school-settings-field textarea {
+    width: 100%;
+    min-height: 42px;
+    padding: 10px 12px;
+    border: 1px solid #dce3eb;
+    border-radius: 7px;
+    outline: none;
+    background: #fff;
+    color: #25344a;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.school-settings-field textarea {
+    min-height: 95px;
+    resize: vertical;
+}
+
+.school-settings-field input:focus,
+.school-settings-field textarea:focus {
+    border-color: #07966c;
+    box-shadow: 0 0 0 3px rgba(7, 150, 108, 0.1);
+}
+
+.school-settings-field small {
+    color: #8995a5;
+    font-size: 10px;
+    font-weight: 400;
+}
+
+.school-settings-field.full {
+    grid-column: 1 / -1;
+}
+
+.school-settings-input-icon {
+    position: relative;
+}
+
+.school-settings-input-icon > i {
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    transform: translateY(-50%);
+    color: #91a0b1;
+    font-size: 12px;
+}
+
+.school-settings-input-icon input {
+    padding-left: 35px;
+}
+
+.school-settings-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.school-settings-bottom > span {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #8190a1;
+    font-size: 11px;
+}
+
+.school-settings-bottom > span i {
+    color: #07966c;
+}
+
+.school-settings-alert {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 15px;
+    border-radius: 8px;
+    font-size: 12px;
+}
+
+.school-settings-alert span {
+    flex: 1;
+}
+
+.school-settings-alert button {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.school-settings-alert.success {
+    background: #eaf8f0;
+    color: #16754f;
+}
+
+.school-settings-alert.error {
+    background: #fff0ef;
+    color: #b74640;
+}
+
+.school-settings-loading {
+    display: flex;
+    min-height: 220px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #718096;
+    font-size: 13px;
+}
+
+.school-settings-loading i {
+    color: #07966c;
+}
+
+@media (max-width: 700px) {
+    .school-settings-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .school-settings-header h1 {
+        font-size: 23px;
+    }
+
+    .school-settings-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .school-settings-field.full {
+        grid-column: auto;
+    }
+
+    .school-settings-bottom {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 460px) {
+    .school-settings-logo-section {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .school-settings-panel-heading,
+    .school-settings-fields {
+        padding: 17px;
+    }
+}

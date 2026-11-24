@@ -1,0 +1,541 @@
+
+/* =========================================================
+   SECONDARY SCHOOL RESULT PROCESSING SYSTEM
+   Teacher Management Styles
+   Theme: Navy Blue, Green and White
+   File: resources/js/pages/teachers/teachers.css
+   ========================================================= */
+
+.teachers-page {
+    width: 100%;
+    min-width: 0;
+    padding: 24px;
+    color: #1f2937;
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+.teachers-page * {
+    box-sizing: border-box;
+}
+
+.teachers-page .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 26px;
+}
+
+.teachers-page .page-title {
+    margin: 0;
+    color: #0e2a47;
+    font-size: 28px;
+    font-weight: 750;
+    letter-spacing: -0.6px;
+}
+
+.teachers-page .page-subtitle {
+    margin: 7px 0 0;
+    color: #68747d;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* Buttons */
+
+.teachers-page .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 42px;
+    padding: 10px 16px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 650;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.2s ease,
+                transform 0.2s ease,
+                box-shadow 0.2s ease;
+}
+
+.teachers-page .btn:hover {
+    transform: translateY(-1px);
+}
+
+.teachers-page .btn-primary {
+    background: #0e2a47;
+    color: #fff;
+}
+
+.teachers-page .btn-primary:hover {
+    background: #173e63;
+    box-shadow: 0 5px 14px rgb(14 42 71 / 15%);
+}
+
+.teachers-page .btn-success {
+    background: #1f8a4c;
+    color: #fff;
+}
+
+.teachers-page .btn-success:hover {
+    background: #176b3a;
+}
+
+.teachers-page .btn-outline {
+    border-color: #d5dde5;
+    background: #fff;
+    color: #0e2a47;
+}
+
+.teachers-page .btn-outline:hover {
+    background: #f3f7fa;
+}
+
+.teachers-page .btn-danger {
+    background: #fff0ef;
+    color: #b23b2e;
+    border-color: #f2ceca;
+}
+
+.teachers-page .btn-danger:hover {
+    background: #ffe2df;
+}
+
+.teachers-page .btn-sm {
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 12px;
+}
+
+/* Cards */
+
+.teachers-page .card {
+    margin-bottom: 22px;
+    overflow: hidden;
+    border: 1px solid #e4eaf0;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 3px 12px rgb(14 42 71 / 4%);
+}
+
+.teachers-page .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 18px 22px;
+    border-bottom: 1px solid #e8edf2;
+    background: #fff;
+}
+
+.teachers-page .card-title {
+    margin: 0;
+    color: #0e2a47;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.teachers-page .card-body {
+    padding: 22px;
+}
+
+/* Search and filters */
+
+.teachers-page .filters,
+.teachers-page .search-filters {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.teachers-page .form-control,
+.teachers-page .form-select {
+    width: 100%;
+    min-height: 43px;
+    padding: 10px 12px;
+    border: 1px solid #d6dee7;
+    border-radius: 8px;
+    outline: none;
+    background: #fff;
+    color: #263746;
+    font: inherit;
+    font-size: 14px;
+    transition: border-color 0.2s ease,
+                box-shadow 0.2s ease;
+}
+
+.teachers-page .form-control:focus,
+.teachers-page .form-select:focus {
+    border-color: #1f8a4c;
+    box-shadow: 0 0 0 3px rgb(31 138 76 / 12%);
+}
+
+.teachers-page .form-control::placeholder {
+    color: #98a4af;
+}
+
+.teachers-page .search-input {
+    flex: 1 1 250px;
+}
+
+.teachers-page .filter-select {
+    flex: 0 1 180px;
+}
+
+/* Forms */
+
+.teachers-page .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+}
+
+.teachers-page .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.teachers-page .form-label {
+    color: #263746;
+    font-size: 13px;
+    font-weight: 650;
+}
+
+.teachers-page .required {
+    color: #b23b2e;
+}
+
+.teachers-page .form-hint {
+    color: #68747d;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.teachers-page .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 22px;
+    padding-top: 20px;
+    border-top: 1px solid #e8edf2;
+}
+
+/* Tables */
+
+.teachers-page .table-responsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.teachers-page .table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 13px;
+}
+
+.teachers-page .table th {
+    padding: 14px 16px;
+    background: #f3f7fa;
+    color: #536474;
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: 0.55px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.teachers-page .table td {
+    padding: 15px 16px;
+    border-bottom: 1px solid #edf1f5;
+    color: #374553;
+    vertical-align: middle;
+}
+
+.teachers-page .table tbody tr:hover {
+    background: #f8fbf9;
+}
+
+.teachers-page .table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.teachers-page .teacher-name {
+    color: #0e2a47;
+    font-weight: 700;
+}
+
+.teachers-page .teacher-email {
+    display: block;
+    margin-top: 4px;
+    color: #68747d;
+    font-size: 12px;
+}
+
+/* Status badges */
+
+.teachers-page .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.teachers-page .status-active {
+    background: #e8f5ed;
+    color: #176b3a;
+}
+
+.teachers-page .status-inactive {
+    background: #fff0ef;
+    color: #b23b2e;
+}
+
+.teachers-page .status-pending {
+    background: #fff5e5;
+    color: #94601d;
+}
+
+/* Teacher avatar */
+
+.teachers-page .teacher-avatar {
+    display: inline-flex;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: #e8f5ed;
+    color: #176b3a;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+.teachers-page .teacher-profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Assignment page */
+
+.teachers-page .assignment-toolbar {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 22px;
+}
+
+.teachers-page .assignment-toolbar .form-group {
+    flex: 1 1 220px;
+    margin-bottom: 0;
+}
+
+.teachers-page .assignment-class {
+    margin-bottom: 18px;
+    border: 1px solid #e0e8ef;
+    border-radius: 10px;
+    background: #fff;
+}
+
+.teachers-page .assignment-class-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 15px 18px;
+    border-bottom: 1px solid #e8edf2;
+    background: #f6f9fb;
+}
+
+.teachers-page .assignment-class-title {
+    margin: 0;
+    color: #0e2a47;
+    font-size: 15px;
+    font-weight: 750;
+}
+
+.teachers-page .assignment-subjects {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    padding: 18px;
+}
+
+.teachers-page .assignment-subject {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid #e2e9ef;
+    border-radius: 8px;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color 0.2s ease,
+                background-color 0.2s ease;
+}
+
+.teachers-page .assignment-subject:hover {
+    border-color: #1f8a4c;
+    background: #f5fbf7;
+}
+
+.teachers-page .assignment-subject input[type="checkbox"] {
+    width: 17px;
+    height: 17px;
+    accent-color: #1f8a4c;
+    cursor: pointer;
+}
+
+.teachers-page .assignment-subject span {
+    color: #344454;
+    font-size: 13px;
+    font-weight: 550;
+}
+
+/* Alerts and empty states */
+
+.teachers-page .alert {
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.teachers-page .alert-success {
+    border-color: #c6e7d1;
+    background: #e8f5ed;
+    color: #176b3a;
+}
+
+.teachers-page .alert-danger {
+    border-color: #f2ceca;
+    background: #fff0ef;
+    color: #9d3027;
+}
+
+.teachers-page .alert-info {
+    border-color: #cfe3f4;
+    background: #eef7ff;
+    color: #245b82;
+}
+
+.teachers-page .empty-state {
+    padding: 45px 20px;
+    text-align: center;
+}
+
+.teachers-page .empty-state h3 {
+    margin: 0 0 8px;
+    color: #0e2a47;
+    font-size: 17px;
+}
+
+.teachers-page .empty-state p {
+    margin: 0 0 18px;
+    color: #68747d;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+/* Loading */
+
+.teachers-page .loading-state {
+    padding: 40px 20px;
+    color: #68747d;
+    text-align: center;
+    font-size: 14px;
+}
+
+/* Pagination */
+
+.teachers-page .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 18px 22px;
+    border-top: 1px solid #e8edf2;
+}
+
+.teachers-page .pagination-info {
+    color: #68747d;
+    font-size: 12px;
+}
+
+/* Responsive layout */
+
+@media (max-width: 900px) {
+    .teachers-page {
+        padding: 18px;
+    }
+
+    .teachers-page .assignment-subjects {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .teachers-page {
+        padding: 12px;
+    }
+
+    .teachers-page .page-title {
+        font-size: 23px;
+    }
+
+    .teachers-page .page-header {
+        align-items: flex-start;
+    }
+
+    .teachers-page .page-header > .btn {
+        width: 100%;
+    }
+
+    .teachers-page .form-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .teachers-page .card-header,
+    .teachers-page .card-body {
+        padding: 15px;
+    }
+
+    .teachers-page .assignment-subjects {
+        grid-template-columns: 1fr;
+        padding: 12px;
+    }
+
+    .teachers-page .form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .teachers-page .form-actions .btn {
+        width: 100%;
+    }
+
+    .teachers-page .pagination {
+        padding: 15px;
+    }
+}
