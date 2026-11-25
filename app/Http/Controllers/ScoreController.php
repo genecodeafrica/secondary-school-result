@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Services\ScoreValidationService;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use RuntimeException;
 use Throwable;
 
 class ScoreController extends Controller
@@ -55,11 +58,6 @@ class ScoreController extends Controller
         ]);
 
         try {
-            /*
-             * IMPORTANT:
-             * ScoreValidationService expects student_id,
-             * subject_id, then class_id.
-             */
             $score = $scoreService->saveScore(
                 $request->user(),
                 (int) $validated['student_id'],
@@ -84,13 +82,26 @@ class ScoreController extends Controller
                     'enteredBy',
                 ]),
             ]);
-        } catch (Throwable $exception) {
-            report($exception);
-
+        } catch (AuthorizationException $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 403);
+        } catch (RuntimeException $exception) {
             return response()->json([
                 'success' => false,
                 'message' => $exception->getMessage(),
             ], 422);
+        } catch (Throwable $exception) {
+            Log::error('Score entry failed unexpectedly.', [
+                'user_id' => $request->user()?->id,
+                'exception' => $exception,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An unexpected error occurred while saving the score.',
+            ], 500);
         }
     }
 }

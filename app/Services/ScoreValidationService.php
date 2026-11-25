@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AcademicSession;
 use App\Models\AssessmentComponent;
 use App\Models\Score;
 use App\Models\SchoolClass;
@@ -10,6 +11,7 @@ use App\Models\StudentClass;
 use App\Models\Subject;
 use App\Models\Teacher;
 use App\Models\TeacherSubject;
+use App\Models\Term;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -126,10 +128,51 @@ class ScoreValidationService
         int $assessmentComponentId,
         float $score
     ): void {
-        // Ensure the user belongs to a school.
         if (!$user->school_id) {
             throw new AuthorizationException(
                 'Your account is not associated with a school.'
+            );
+        }
+
+        // Validate academic session ownership and status.
+        $academicSession = AcademicSession::find($academicSessionId);
+
+        if (!$academicSession) {
+            throw new RuntimeException(
+                'The selected academic session does not exist.'
+            );
+        }
+
+        if ((int) $academicSession->school_id !== (int) $user->school_id) {
+            throw new AuthorizationException(
+                'You cannot enter scores for another school\'s academic session.'
+            );
+        }
+
+        if (!$academicSession->status) {
+            throw new RuntimeException(
+                'The selected academic session is inactive.'
+            );
+        }
+
+        // Validate term belongs to the selected academic session.
+        $term = Term::find($termId);
+
+        if (!$term) {
+            throw new RuntimeException(
+                'The selected term does not exist.'
+            );
+        }
+
+        if ((int) $term->academic_session_id !== (int) $academicSession->id) {
+            throw new RuntimeException(
+                'The selected term does not belong to the selected academic session.'
+            );
+        }
+
+        if (!$term->status) {
+            throw new RuntimeException(
+                'The selected term is inactive.'
             );
         }
 
@@ -196,15 +239,7 @@ class ScoreValidationService
             );
         }
 
-        /*
-         * Teacher validation.
-         *
-         * School Administrators and Super Administrators
-         * do not require teacher profiles.
-         *
-         * Regular teachers must have an active teacher
-         * profile and an assignment for the selected subject.
-         */
+        // Validate teacher assignment or administrator role.
         $isSchoolAdministrator = $user->hasAnyRole([
             'Super Admin',
             'School Admin',
@@ -237,9 +272,7 @@ class ScoreValidationService
         }
 
         // Validate assessment component.
-        $component = AssessmentComponent::find(
-            $assessmentComponentId
-        );
+        $component = AssessmentComponent::find($assessmentComponentId);
 
         if (!$component) {
             throw new RuntimeException(
@@ -274,7 +307,7 @@ class ScoreValidationService
             );
         }
 
-        // Validate student enrollment.
+        // Validate student enrollment for the exact session and term.
         $enrollmentExists = StudentClass::where([
             'student_id' => $studentId,
             'class_id' => $classId,
@@ -289,15 +322,16 @@ class ScoreValidationService
             );
         }
 
-        // Validate subject assignment to class.
+        // Validate subject is assigned to this class for this session.
         $subjectAssignedToClass = $schoolClass
             ->subjects()
             ->where('subjects.id', $subjectId)
+            ->wherePivot('academic_session_id', $academicSessionId)
             ->exists();
 
         if (!$subjectAssignedToClass) {
             throw new RuntimeException(
-                'The selected subject is not assigned to the selected class.'
+                'The selected subject is not assigned to the selected class for this academic session.'
             );
         }
     }

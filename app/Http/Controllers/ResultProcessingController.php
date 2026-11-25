@@ -10,8 +10,11 @@ use App\Models\StudentClass;
 use App\Models\Term;
 use App\Services\ResultProcessingService;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use RuntimeException;
 use Throwable;
 
 class ResultProcessingController extends Controller
@@ -69,6 +72,61 @@ class ResultProcessingController extends Controller
         }
     }
 
+    private function handleException(
+        Throwable $exception,
+        string $context,
+        array $details = []
+    ): JsonResponse {
+        if ($exception instanceof AuthorizationException) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 403);
+        }
+
+        if ($exception instanceof ModelNotFoundException) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The requested record was not found.',
+            ], 404);
+        }
+
+        if ($exception instanceof RuntimeException) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 422);
+        }
+
+        Log::error($context, array_merge($details, [
+            'exception' => $exception,
+        ]));
+
+        return response()->json([
+            'success' => false,
+            'message' => 'An unexpected error occurred while processing results.',
+        ], 500);
+    }
+
+    private function batchErrorMessage(
+        Throwable $exception,
+        int $studentId
+    ): string {
+        if (
+            $exception instanceof RuntimeException
+            || $exception instanceof AuthorizationException
+        ) {
+            return $exception->getMessage();
+        }
+
+        Log::error('Unexpected error processing an individual student result.', [
+            'student_id' => $studentId,
+            'exception' => $exception,
+        ]);
+
+        return 'An unexpected error occurred while processing this student.';
+    }
+
     public function process(
         Request $request,
         ResultProcessingService $service
@@ -111,13 +169,15 @@ class ResultProcessingController extends Controller
                 'message' => 'Student result processed successfully.',
                 'data' => $result,
             ]);
-        } catch (AuthorizationException $exception) {
-            throw $exception;
         } catch (Throwable $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => $exception->getMessage(),
-            ], 422);
+            return $this->handleException(
+                $exception,
+                'Unexpected individual result processing error.',
+                [
+                    'user_id' => $request->user()?->id,
+                    'student_id' => $validated['student_id'],
+                ]
+            );
         }
     }
 
@@ -187,6 +247,8 @@ class ResultProcessingController extends Controller
                     ->where('term_id', $termId)
                     ->first();
 
+                // Never recalculate submitted, reviewed,
+                // approved, or published results.
                 if (
                     $existingResult
                     && $existingResult->status !== 'draft'
@@ -211,7 +273,10 @@ class ResultProcessingController extends Controller
                     'student_name' => $student->full_name
                         ?? $student->name
                         ?? ('Student #' . $student->id),
-                    'message' => $exception->getMessage(),
+                    'message' => $this->batchErrorMessage(
+                        $exception,
+                        (int) $student->id
+                    ),
                 ];
             }
         }
@@ -259,13 +324,15 @@ class ResultProcessingController extends Controller
                 'success' => true,
                 'message' => 'Class positions calculated successfully.',
             ]);
-        } catch (AuthorizationException $exception) {
-            throw $exception;
         } catch (Throwable $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => $exception->getMessage(),
-            ], 422);
+            return $this->handleException(
+                $exception,
+                'Unexpected result position calculation error.',
+                [
+                    'user_id' => $request->user()?->id,
+                    'class_id' => $validated['class_id'],
+                ]
+            );
         }
     }
 }

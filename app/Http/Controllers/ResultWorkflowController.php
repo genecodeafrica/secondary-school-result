@@ -4,8 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Result;
 use App\Services\ResultWorkflowService;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use RuntimeException;
 use Throwable;
 
 class ResultWorkflowController extends Controller
@@ -51,7 +55,6 @@ class ResultWorkflowController extends Controller
         try {
             $result = Result::findOrFail($validated['result_id']);
 
-            // Correct order: User first, Result second.
             $result = $workflow->reject(
                 $request->user(),
                 $result,
@@ -65,10 +68,7 @@ class ResultWorkflowController extends Controller
             ]);
 
         } catch (Throwable $exception) {
-            return response()->json([
-                'success' => false,
-                'message' => $exception->getMessage(),
-            ], 422);
+            return $this->handleException($exception);
         }
     }
 
@@ -95,7 +95,6 @@ class ResultWorkflowController extends Controller
         try {
             $result = Result::findOrFail($validated['result_id']);
 
-            // Correct order: User first, Result second.
             $result = $workflow->{$method}(
                 $request->user(),
                 $result
@@ -108,11 +107,41 @@ class ResultWorkflowController extends Controller
             ]);
 
         } catch (Throwable $exception) {
+            return $this->handleException($exception);
+        }
+    }
+
+    protected function handleException(Throwable $exception): JsonResponse
+    {
+        if ($exception instanceof AuthorizationException) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 403);
+        }
+
+        if ($exception instanceof ModelNotFoundException) {
+            return response()->json([
+                'success' => false,
+                'message' => 'The requested result was not found.',
+            ], 404);
+        }
+
+        if ($exception instanceof RuntimeException) {
             return response()->json([
                 'success' => false,
                 'message' => $exception->getMessage(),
             ], 422);
         }
+
+        Log::error('Result workflow error', [
+            'exception' => $exception,
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'An unexpected error occurred while processing the result.',
+        ], 500);
     }
 
     protected function successMessage(string $method): string

@@ -8,10 +8,10 @@ use App\Models\Grade;
 use App\Models\Result;
 use App\Models\ResultDetail;
 use App\Models\Score;
+use App\Models\SchoolClass;
 use App\Models\Student;
 use App\Models\StudentClass;
 use App\Models\Term;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -34,7 +34,31 @@ class ResultProcessingService
         ) {
             /*
             |--------------------------------------------------------------------------
-            | 1. Verify student enrollment
+            | 1. Validate student and academic ownership
+            |--------------------------------------------------------------------------
+            */
+
+            if (!$student->status) {
+                throw new RuntimeException(
+                    'The selected student is inactive.'
+                );
+            }
+
+            $schoolClass = $this->validateAcademicScope(
+                $classId,
+                $academicSessionId,
+                $termId
+            );
+
+            if ((int) $student->school_id !== (int) $schoolClass->school_id) {
+                throw new RuntimeException(
+                    'The selected student and class do not belong to the same school.'
+                );
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | 2. Verify student enrollment
             |--------------------------------------------------------------------------
             */
 
@@ -54,7 +78,7 @@ class ResultProcessingService
 
             /*
             |--------------------------------------------------------------------------
-            | Protect existing result workflow
+            | 3. Protect existing result workflow
             |--------------------------------------------------------------------------
             */
 
@@ -72,10 +96,9 @@ class ResultProcessingService
                 );
             }
 
-
             /*
             |--------------------------------------------------------------------------
-            | 2. Load assessment components
+            | 4. Load assessment components
             |--------------------------------------------------------------------------
             */
 
@@ -91,13 +114,6 @@ class ResultProcessingService
                 );
             }
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | 3. Validate assessment configuration
-            |--------------------------------------------------------------------------
-            */
-
             $componentMaximumTotal = $components->sum(
                 fn ($component) => (float) $component->maximum_score
             );
@@ -108,10 +124,11 @@ class ResultProcessingService
                 );
             }
 
+            $componentsById = $components->keyBy('id');
 
             /*
             |--------------------------------------------------------------------------
-            | 4. Load grade configuration
+            | 5. Load grade configuration
             |--------------------------------------------------------------------------
             */
 
@@ -127,10 +144,9 @@ class ResultProcessingService
                 );
             }
 
-
             /*
             |--------------------------------------------------------------------------
-            | 5. Load student's scores
+            | 6. Load and validate student's scores
             |--------------------------------------------------------------------------
             */
 
@@ -151,61 +167,149 @@ class ResultProcessingService
                 );
             }
 
+            $subjectIds = [];
+
+            foreach ($scores as $scoreRecord) {
+                $subject = $scoreRecord->subject;
+                $component = $scoreRecord->assessmentComponent;
+
+                if (!$subject || !$component) {
+                    throw new RuntimeException(
+                        'A saved score has an invalid subject or assessment component.'
+                    );
+                }
+
+                if (
+                    (int) $subject->school_id !== (int) $student->school_id
+                    || !$subject->status
+                ) {
+                    throw new RuntimeException(
+                        'A saved score references an invalid or inactive subject.'
+                    );
+                }
+
+                if (
+                    (int) $component->school_id !== (int) $student->school_id
+                    || !$component->is_active
+                    || !$componentsById->has($component->id)
+                ) {
+                    throw new RuntimeException(
+                        'A saved score references an invalid or inactive assessment component.'
+                    );
+                }
+
+                $scoreValue = (float) $scoreRecord->score;
+                $maximumScore = (float) $component->maximum_score;
+
+                if ($scoreValue < 0 || $scoreValue > $maximumScore) {
+                    throw new RuntimeException(
+                        'A saved score is outside its assessment component maximum.'
+                    );
+                }
+
+                $subjectIds[] = (int) $subject->id;
+            }
 
             /*
             |--------------------------------------------------------------------------
-            | 6. Group scores by subject
+            | 7. Verify subjects belong to the selected class and session
+            |--------------------------------------------------------------------------
+            */
+
+            $subjectIds = array_values(array_unique($subjectIds));
+
+            $assignedSubjectIds = $schoolClass->subjects()
+                ->whereIn('subjects.id', $subjectIds)
+                ->wherePivot('academic_session_id', $academicSessionId)
+                ->pluck('subjects.id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            $unassignedSubjectIds = array_diff(
+                $subjectIds,
+                $assignedSubjectIds
+            );
+
+            if (!empty($unassignedSubjectIds)) {
+                throw new RuntimeException(
+                    'One or more scored subjects are not assigned to the selected class for this academic session.'
+                );
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | 8. Group scores by subject and require complete components
             |--------------------------------------------------------------------------
             */
 
             $scoresBySubject = $scores->groupBy('subject_id');
 
+            $activeComponentIds = $components
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->sort()
+                ->values()
+                ->all();
+
             $subjectResults = [];
 
             foreach ($scoresBySubject as $subjectId => $subjectScores) {
-
                 $subject = $subjectScores->first()->subject;
 
                 if (!$subject) {
-                    continue;
+                    throw new RuntimeException(
+                        'A scored subject could not be loaded.'
+                    );
+                }
+
+                $recordedComponentIds = $subjectScores
+                    ->pluck('assessment_component_id')
+                    ->map(fn ($id) => (int) $id)
+                    ->sort()
+                    ->values()
+                    ->all();
+
+                if ($recordedComponentIds !== $activeComponentIds) {
+                    $missingComponentIds = array_diff(
+                        $activeComponentIds,
+                        $recordedComponentIds
+                    );
+
+                    $missingComponents = $components
+                        ->whereIn('id', $missingComponentIds)
+                        ->pluck('code')
+                        ->implode(', ');
+
+                    throw new RuntimeException(
+                        "Subject {$subject->name} does not have scores for all active assessment components."
+                        . ($missingComponents
+                            ? " Missing: {$missingComponents}."
+                            : '')
+                    );
                 }
 
                 $subjectTotal = 0;
 
                 foreach ($components as $component) {
-
                     $scoreRecord = $subjectScores->firstWhere(
                         'assessment_component_id',
                         $component->id
                     );
 
                     if (!$scoreRecord) {
-                        continue;
+                        throw new RuntimeException(
+                            "Subject {$subject->name} is missing assessment component {$component->code}."
+                        );
                     }
 
-                    $scoreValue = (float) $scoreRecord->score;
-
-                    $maximumScore = (float) $component->maximum_score;
-
-                    /*
-                     * Protect against invalid values.
-                     */
-                    if ($scoreValue < 0) {
-                        $scoreValue = 0;
-                    }
-
-                    if ($scoreValue > $maximumScore) {
-                        $scoreValue = $maximumScore;
-                    }
-
-                    $subjectTotal += $scoreValue;
+                    $subjectTotal += (float) $scoreRecord->score;
                 }
 
                 $subjectTotal = round($subjectTotal, 2);
 
                 /*
                 |--------------------------------------------------------------------------
-                | Find subject grade
+                | 9. Find subject grade
                 |--------------------------------------------------------------------------
                 */
 
@@ -218,15 +322,14 @@ class ResultProcessingService
                     'subject_id' => (int) $subjectId,
                     'subject_name' => $subject->name,
                     'total_score' => $subjectTotal,
-                    'grade' => $grade?->code,
-                    'remark' => $grade?->remark,
+                    'grade' => $grade->code,
+                    'remark' => $grade->remark,
                 ];
             }
 
-
             /*
             |--------------------------------------------------------------------------
-            | 7. Confirm that subjects were calculated
+            | 10. Confirm that subjects were calculated
             |--------------------------------------------------------------------------
             */
 
@@ -236,35 +339,24 @@ class ResultProcessingService
                 );
             }
 
-
             /*
             |--------------------------------------------------------------------------
-            | 8. Calculate grand total
+            | 11. Calculate grand total and average
             |--------------------------------------------------------------------------
             */
 
-            $grandTotal = collect($subjectResults)
-                ->sum('total_score');
-
-            $grandTotal = round($grandTotal, 2);
-
-
-            /*
-            |--------------------------------------------------------------------------
-            | 9. Calculate average
-            |--------------------------------------------------------------------------
-            */
+            $grandTotal = round(
+                collect($subjectResults)->sum('total_score'),
+                2
+            );
 
             $subjectCount = count($subjectResults);
 
-            $average = $subjectCount > 0
-                ? round($grandTotal / $subjectCount, 2)
-                : 0;
-
+            $average = round($grandTotal / $subjectCount, 2);
 
             /*
             |--------------------------------------------------------------------------
-            | 10. Determine overall grade
+            | 12. Determine overall grade
             |--------------------------------------------------------------------------
             */
 
@@ -273,10 +365,9 @@ class ResultProcessingService
                 $average
             );
 
-
             /*
             |--------------------------------------------------------------------------
-            | 11. Create or update result
+            | 13. Create or update result
             |--------------------------------------------------------------------------
             */
 
@@ -290,28 +381,18 @@ class ResultProcessingService
                 [
                     'total_score' => $grandTotal,
                     'average' => $average,
-                    'overall_grade' => $overallGrade?->code,
-                    'overall_remark' => $overallGrade?->remark,
-
-                    /*
-                     * Reprocessing a result returns it to draft.
-                     */
+                    'overall_grade' => $overallGrade->code,
+                    'overall_remark' => $overallGrade->remark,
                     'status' => 'draft',
-
-                    /*
-                     * Previous approval/publishing data
-                     * must not remain after recalculation.
-                     */
                     'approved_by' => null,
                     'approved_at' => null,
                     'published_at' => null,
                 ]
             );
 
-
             /*
             |--------------------------------------------------------------------------
-            | 12. Remove old subject details
+            | 14. Replace old subject details
             |--------------------------------------------------------------------------
             */
 
@@ -319,15 +400,7 @@ class ResultProcessingService
                 ->where('result_id', $result->id)
                 ->delete();
 
-
-            /*
-            |--------------------------------------------------------------------------
-            | 13. Create subject result details
-            |--------------------------------------------------------------------------
-            */
-
             foreach ($subjectResults as $subjectResult) {
-
                 ResultDetail::create([
                     'result_id' => $result->id,
                     'student_id' => $student->id,
@@ -339,10 +412,9 @@ class ResultProcessingService
                 ]);
             }
 
-
             /*
             |--------------------------------------------------------------------------
-            | 14. Calculate positions
+            | 15. Calculate positions
             |--------------------------------------------------------------------------
             */
 
@@ -352,10 +424,9 @@ class ResultProcessingService
                 $termId
             );
 
-
             /*
             |--------------------------------------------------------------------------
-            | 15. Reload complete result
+            | 16. Reload complete result
             |--------------------------------------------------------------------------
             */
 
@@ -369,9 +440,76 @@ class ResultProcessingService
         });
     }
 
+    /**
+     * Validate class, academic session and term ownership.
+     */
+    protected function validateAcademicScope(
+        int $classId,
+        int $academicSessionId,
+        int $termId
+    ): SchoolClass {
+        $schoolClass = SchoolClass::find($classId);
 
-        /**
-     * Calculate subject positions and overall class positions.
+        if (!$schoolClass) {
+            throw new RuntimeException(
+                'The selected class does not exist.'
+            );
+        }
+
+        if (!$schoolClass->status) {
+            throw new RuntimeException(
+                'The selected class is inactive.'
+            );
+        }
+
+        $academicSession = AcademicSession::find($academicSessionId);
+
+        if (!$academicSession) {
+            throw new RuntimeException(
+                'The selected academic session does not exist.'
+            );
+        }
+
+        if (
+            (int) $academicSession->school_id
+            !== (int) $schoolClass->school_id
+        ) {
+            throw new RuntimeException(
+                'The selected class and academic session do not belong to the same school.'
+            );
+        }
+
+        if (!$academicSession->status) {
+            throw new RuntimeException(
+                'The selected academic session is inactive.'
+            );
+        }
+
+        $term = Term::find($termId);
+
+        if (!$term) {
+            throw new RuntimeException(
+                'The selected term does not exist.'
+            );
+        }
+
+        if ((int) $term->academic_session_id !== (int) $academicSession->id) {
+            throw new RuntimeException(
+                'The selected term does not belong to the selected academic session.'
+            );
+        }
+
+        if (!$term->status) {
+            throw new RuntimeException(
+                'The selected term is inactive.'
+            );
+        }
+
+        return $schoolClass;
+    }
+
+    /**
+     * Calculate subject and overall class positions.
      * Published positions are permanently preserved.
      */
     public function calculatePositions(
@@ -379,6 +517,12 @@ class ResultProcessingService
         int $academicSessionId,
         int $termId
     ): void {
+        $this->validateAcademicScope(
+            $classId,
+            $academicSessionId,
+            $termId
+        );
+
         /*
         |--------------------------------------------------------------------------
         | 1. Load all results, including published results for ranking
@@ -438,11 +582,12 @@ class ResultProcessingService
 
         /*
         |--------------------------------------------------------------------------
-        | 3. Load all result details for ranking
+        | 3. Load result details and their result statuses
         |--------------------------------------------------------------------------
         */
 
         $details = ResultDetail::query()
+            ->with('result:id,status')
             ->whereIn('result_id', $results->pluck('id'))
             ->get()
             ->groupBy('subject_id');
@@ -486,5 +631,27 @@ class ResultProcessingService
                 $previousScore = $currentScore;
             }
         }
+    }
+
+    /**
+     * Find the grade matching a score.
+     */
+    protected function findGrade($grades, float $score): Grade
+    {
+        $grade = $grades->first(function ($grade) use ($score) {
+            return $score >= (float) $grade->minimum_score
+                && (
+                    $grade->maximum_score === null
+                    || $score <= (float) $grade->maximum_score
+                );
+        });
+
+        if (!$grade) {
+            throw new RuntimeException(
+                "No active grade configuration matches the score {$score}."
+            );
+        }
+
+        return $grade;
     }
 }

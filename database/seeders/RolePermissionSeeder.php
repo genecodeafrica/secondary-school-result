@@ -5,19 +5,13 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolePermissionSeeder extends Seeder
 {
-    /**
-     * Seed application roles and permissions.
-     */
     public function run(): void
     {
-        /*
-        |--------------------------------------------------------------------------
-        | Permissions
-        |--------------------------------------------------------------------------
-        */
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         $permissions = [
             'results.view',
@@ -37,137 +31,58 @@ class RolePermissionSeeder extends Seeder
             ]);
         }
 
+        $rolePermissions = [
+            'Super Admin' => [],
 
-        /*
-        |--------------------------------------------------------------------------
-        | Roles
-        |--------------------------------------------------------------------------
-        */
+            'School Admin' => $permissions,
 
-        $teacher = Role::firstOrCreate([
-            'name' => 'teacher',
-            'guard_name' => 'web',
-        ]);
+            'Teacher' => [
+                'results.view',
+                'results.enter',
+                'results.process',
+                'results.submit',
+            ],
 
-        $reviewer = Role::firstOrCreate([
-            'name' => 'reviewer',
-            'guard_name' => 'web',
-        ]);
+            'Form Teacher' => [
+                'results.view',
+                'results.review',
+                'results.reject',
+            ],
 
-        $approver = Role::firstOrCreate([
-            'name' => 'approver',
-            'guard_name' => 'web',
-        ]);
+            'Vice Principal' => [
+                'results.view',
+                'results.review',
+                'results.approve',
+                'results.reject',
+            ],
 
-        $publisher = Role::firstOrCreate([
-            'name' => 'publisher',
-            'guard_name' => 'web',
-        ]);
+            'Principal' => [
+                'results.view',
+                'results.approve',
+                'results.publish',
+                'results.reject',
+            ],
 
-        $administrator = Role::firstOrCreate([
-            'name' => 'administrator',
-            'guard_name' => 'web',
-        ]);
+            'Student' => [
+                'results.view',
+            ],
 
+            'Parent' => [
+                'results.view',
+            ],
 
-        /*
-        |--------------------------------------------------------------------------
-        | Teacher Permissions
-        |--------------------------------------------------------------------------
-        */
+            'Accountant' => [],
+        ];
 
-        $teacher->syncPermissions([
-            'results.view',
-            'results.enter',
-            'results.process',
-            'results.submit',
-        ]);
+        foreach ($rolePermissions as $roleName => $rolePermissionNames) {
+            $role = Role::firstOrCreate([
+                'name' => $roleName,
+                'guard_name' => 'web',
+            ]);
 
+            $role->syncPermissions($rolePermissionNames);
+        }
 
-        /*
-        |--------------------------------------------------------------------------
-        | Reviewer Permissions
-        |--------------------------------------------------------------------------
-        */
-
-        $reviewer->syncPermissions([
-            'results.view',
-            'results.review',
-            'results.reject',
-        ]);
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Approver Permissions
-        |--------------------------------------------------------------------------
-        */
-
-        $approver->syncPermissions([
-            'results.view',
-            'results.review',
-            'results.approve',
-            'results.reject',
-        ]);
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Publisher Permissions
-        |--------------------------------------------------------------------------
-        */
-
-        $publisher->syncPermissions([
-            'results.view',
-            'results.publish',
-        ]);
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Administrator Permissions
-        |--------------------------------------------------------------------------
-        */
-
-        $administrator->syncPermissions(
-            Permission::all()
-        );
-
-        $student = Role::firstOrCreate([
-            'name' => 'Student',
-            'guard_name' => 'web',
-        ]);
-
-        $parent = Role::firstOrCreate([
-            'name' => 'Parent',
-            'guard_name' => 'web',
-        ]);
-
-        $student->syncPermissions(['results.view']);
-        $parent->syncPermissions(['results.view']);
-
-        /*
-|--------------------------------------------------------------------------
-| Student and Parent Permissions
-|--------------------------------------------------------------------------
-*/
-
-        $student = Role::firstOrCreate([
-            'name' => 'Student',
-            'guard_name' => 'web',
-        ]);
-
-        $parent = Role::firstOrCreate([
-            'name' => 'Parent',
-            'guard_name' => 'web',
-        ]);
-
-        $student->syncPermissions([
-            'results.view',
-        ]);
-
-        $parent->syncPermissions([
-            'results.view',
-        ]);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }
