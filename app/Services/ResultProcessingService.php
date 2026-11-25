@@ -370,8 +370,9 @@ class ResultProcessingService
     }
 
 
-    /**
+        /**
      * Calculate subject positions and overall class positions.
+     * Published positions are permanently preserved.
      */
     public function calculatePositions(
         int $classId,
@@ -380,7 +381,7 @@ class ResultProcessingService
     ): void {
         /*
         |--------------------------------------------------------------------------
-        | 1. Load all results for the selected class/session/term
+        | 1. Load all results, including published results for ranking
         |--------------------------------------------------------------------------
         */
 
@@ -403,10 +404,9 @@ class ResultProcessingService
             return;
         }
 
-
         /*
         |--------------------------------------------------------------------------
-        | 2. Calculate overall class positions
+        | 2. Calculate overall positions
         |--------------------------------------------------------------------------
         */
 
@@ -415,7 +415,6 @@ class ResultProcessingService
         $rank = 0;
 
         foreach ($results as $result) {
-
             $rank++;
 
             $currentAverage = (float) $result->average;
@@ -427,37 +426,34 @@ class ResultProcessingService
                 $position = $rank;
             }
 
-            $result->update([
-                'position' => $position,
-            ]);
+            // Never modify a published result.
+            if ($result->status !== 'published') {
+                $result->update([
+                    'position' => $position,
+                ]);
+            }
 
             $previousAverage = $currentAverage;
         }
 
-
         /*
         |--------------------------------------------------------------------------
-        | 3. Load all result details
+        | 3. Load all result details for ranking
         |--------------------------------------------------------------------------
         */
 
         $details = ResultDetail::query()
-            ->whereIn(
-                'result_id',
-                $results->pluck('id')
-            )
+            ->whereIn('result_id', $results->pluck('id'))
             ->get()
             ->groupBy('subject_id');
 
-
         /*
         |--------------------------------------------------------------------------
-        | 4. Calculate position for each subject
+        | 4. Calculate subject positions
         |--------------------------------------------------------------------------
         */
 
-        foreach ($details as $subjectId => $subjectDetails) {
-
+        foreach ($details as $subjectDetails) {
             $sortedDetails = $subjectDetails
                 ->sortByDesc(
                     fn ($detail) => (float) $detail->total_score
@@ -469,7 +465,6 @@ class ResultProcessingService
             $previousScore = null;
 
             foreach ($sortedDetails as $detail) {
-
                 $rank++;
 
                 $currentScore = (float) $detail->total_score;
@@ -481,36 +476,15 @@ class ResultProcessingService
                     $position = $rank;
                 }
 
-                $detail->update([
-                    'subject_position' => $position,
-                ]);
+                // Preserve subject positions for published results.
+                if ($detail->result?->status !== 'published') {
+                    $detail->update([
+                        'subject_position' => $position,
+                    ]);
+                }
 
                 $previousScore = $currentScore;
             }
         }
-    }
-
-
-    /**
-     * Find a grade matching a score.
-     */
-    protected function findGrade(
-        Collection $grades,
-        float $score
-    ): ?Grade {
-        foreach ($grades as $grade) {
-
-            $minimum = (float) $grade->minimum_score;
-            $maximum = (float) $grade->maximum_score;
-
-            if (
-                $score >= $minimum
-                && $score <= $maximum
-            ) {
-                return $grade;
-            }
-        }
-
-        return null;
     }
 }

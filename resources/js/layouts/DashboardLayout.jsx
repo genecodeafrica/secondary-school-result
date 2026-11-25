@@ -1,8 +1,26 @@
 import React, { useState } from 'react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import {
+    NavLink,
+    Outlet,
+    useLocation,
+    useNavigate,
+} from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
 import './dashboard.css';
+
+const superAdminNavigation = [
+    {
+        section: 'SYSTEM ADMINISTRATION',
+        items: [
+            {
+                label: 'Registered Schools',
+                path: '/schools',
+                icon: 'fa-school',
+            },
+        ],
+    },
+];
 
 const staffNavigation = [
     {
@@ -71,7 +89,8 @@ function getRoleName(role) {
 
 function hasRole(user, roleName) {
     return (user?.roles || []).some(
-        (role) => getRoleName(role).toLowerCase() === roleName.toLowerCase()
+        (role) =>
+            getRoleName(role).toLowerCase() === roleName.toLowerCase()
     );
 }
 
@@ -92,17 +111,24 @@ export default function DashboardLayout({ children }) {
     const navigate = useNavigate();
     const location = useLocation();
 
+    const isSuperAdmin = hasRole(user, 'Super Admin');
+    const isSchoolAdmin = hasRole(user, 'School Admin');
     const isParent = hasRole(user, 'Parent');
     const isTeacher = hasRole(user, 'Teacher');
     const isStudent = hasRole(user, 'Student');
 
-    const navigation = isStudent
-        ? studentNavigation
-        : isParent
-            ? parentNavigation
-            : isTeacher
-                ? teacherNavigation
-                : staffNavigation;
+    // Each role receives only its own navigation.
+    const navigation = isSuperAdmin
+        ? superAdminNavigation
+        : isStudent
+            ? studentNavigation
+            : isParent
+                ? parentNavigation
+                : isTeacher
+                    ? teacherNavigation
+                    : isSchoolAdmin
+                        ? staffNavigation
+                        : [];
 
     const name = user?.name || 'User';
     const initials = getInitials(name);
@@ -111,11 +137,47 @@ export default function DashboardLayout({ children }) {
         .flatMap((group) => group.items)
         .find((item) => location.pathname === item.path);
 
-    const pageTitle = currentPage?.label || 'School Management';
+    const pageTitle = currentPage?.label || 'School Portal';
 
     const roleLabel = (user?.roles || [])
         .map(getRoleName)
         .filter(Boolean)[0] || 'User';
+
+    const portalTitle = isSuperAdmin
+        ? 'System Administration'
+        : isStudent
+            ? 'Student Portal'
+            : isParent
+                ? 'Parent Portal'
+                : isTeacher
+                    ? 'Teacher Portal'
+                    : isSchoolAdmin
+                        ? 'School Administration'
+                        : 'Restricted Access';
+
+    const portalSubtitle = isSuperAdmin
+        ? 'School registration workspace'
+        : isStudent
+            ? 'Academic workspace'
+            : isParent
+                ? 'Family access'
+                : isTeacher
+                    ? 'Teaching workspace'
+                    : isSchoolAdmin
+                        ? 'Management portal'
+                        : 'Limited access';
+
+    const portalInitials = isSuperAdmin
+        ? 'SA'
+        : isStudent
+            ? 'ST'
+            : isParent
+                ? 'PR'
+                : isTeacher
+                    ? 'TC'
+                    : isSchoolAdmin
+                        ? 'ED'
+                        : 'US';
 
     const handleLogout = async () => {
         setProfileOpen(false);
@@ -169,8 +231,14 @@ export default function DashboardLayout({ children }) {
                     </div>
 
                     <div className="brand-copy">
-                        <span className="brand-name">School Result Portal</span>
-                        <span className="brand-caption">SCHOOL MANAGEMENT</span>
+                        <span className="brand-name">
+                            School Result Portal
+                        </span>
+                        <span className="brand-caption">
+                            {isSuperAdmin
+                                ? 'SYSTEM ADMINISTRATION'
+                                : 'SCHOOL MANAGEMENT'}
+                        </span>
                     </div>
 
                     <button
@@ -185,37 +253,18 @@ export default function DashboardLayout({ children }) {
 
                 <div className="school-identity">
                     <div className="school-identity-icon">
-                        {isStudent
-                            ? 'ST'
-                            : isParent
-                                ? 'PR'
-                                : isTeacher
-                                    ? 'TC'
-                                    : 'ED'}
+                        {portalInitials}
                     </div>
 
                     <div className="school-identity-copy">
-                        <strong>
-                            {isStudent
-                                ? 'Student Portal'
-                                : isParent
-                                    ? 'Parent Portal'
-                                    : isTeacher
-                                        ? 'Teacher Portal'
-                                        : 'School Administration'}
-                        </strong>
-                        <span>
-                            {isStudent
-                                ? 'Academic workspace'
-                                : isParent
-                                    ? 'Family access'
-                                    : isTeacher
-                                        ? 'Teaching workspace'
-                                        : 'Management portal'}
-                        </span>
+                        <strong>{portalTitle}</strong>
+                        <span>{portalSubtitle}</span>
                     </div>
 
-                    <span className="online-indicator" title="System active" />
+                    <span
+                        className="online-indicator"
+                        title="System active"
+                    />
                 </div>
 
                 <nav
@@ -235,12 +284,18 @@ export default function DashboardLayout({ children }) {
                                     end
                                     onClick={() => setSidebarOpen(false)}
                                     className={({ isActive }) =>
-                                        `sidebar-link ${isActive ? 'active' : ''}`
+                                        `sidebar-link ${
+                                            isActive ? 'active' : ''
+                                        }`
                                     }
                                 >
-                                    <span className="sidebar-link-icon" aria-hidden="true">
-                                        <i className={`fas ${item.icon}`}></i>
+                                    <span
+                                        className="sidebar-link-icon"
+                                        aria-hidden="true"
+                                    >
+                                        <i className={`fas ${item.icon}`} />
                                     </span>
+
                                     <span>{item.label}</span>
                                 </NavLink>
                             ))}
@@ -253,7 +308,11 @@ export default function DashboardLayout({ children }) {
                         <div className="help-icon">?</div>
                         <div>
                             <strong>Need assistance?</strong>
-                            <span>Contact your school administrator.</span>
+                            <span>
+                                {isSuperAdmin
+                                    ? 'Manage registered schools.'
+                                    : 'Contact your school administrator.'}
+                            </span>
                         </div>
                     </div>
 
@@ -263,7 +322,7 @@ export default function DashboardLayout({ children }) {
                         onClick={handleLogout}
                     >
                         <span aria-hidden="true">
-                            <i className="fas fa-sign-out-alt"></i>
+                            <i className="fas fa-sign-out-alt" />
                         </span>
                         Sign out
                     </button>
@@ -290,8 +349,16 @@ export default function DashboardLayout({ children }) {
                         </button>
 
                         <div className="breadcrumb">
-                            <span>School Portal</span>
-                            <span className="breadcrumb-separator">/</span>
+                            <span>
+                                {isSuperAdmin
+                                    ? 'System Portal'
+                                    : 'School Portal'}
+                            </span>
+
+                            <span className="breadcrumb-separator">
+                                /
+                            </span>
+
                             <strong>{pageTitle}</strong>
                         </div>
                     </div>
@@ -309,9 +376,13 @@ export default function DashboardLayout({ children }) {
                                 type="button"
                                 className="profile-button"
                                 aria-expanded={profileOpen}
-                                onClick={() => setProfileOpen((open) => !open)}
+                                onClick={() =>
+                                    setProfileOpen((open) => !open)
+                                }
                             >
-                                <span className="profile-avatar">{initials}</span>
+                                <span className="profile-avatar">
+                                    {initials}
+                                </span>
 
                                 <span className="profile-copy">
                                     <strong>{name}</strong>
@@ -319,7 +390,7 @@ export default function DashboardLayout({ children }) {
                                 </span>
 
                                 <span className="profile-chevron">
-                                    <i className="fas fa-chevron-down"></i>
+                                    <i className="fas fa-chevron-down" />
                                 </span>
                             </button>
 
@@ -329,20 +400,24 @@ export default function DashboardLayout({ children }) {
                                         type="button"
                                         className="dropdown-dismiss"
                                         aria-label="Close profile menu"
-                                        onClick={() => setProfileOpen(false)}
+                                        onClick={() =>
+                                            setProfileOpen(false)
+                                        }
                                     />
 
                                     <div className="profile-dropdown">
                                         <div className="dropdown-user">
                                             <strong>{name}</strong>
-                                            <span>{user?.email || ''}</span>
+                                            <span>
+                                                {user?.email || ''}
+                                            </span>
                                         </div>
 
                                         <button
                                             type="button"
                                             onClick={handleLogout}
                                         >
-                                            <i className="fas fa-sign-out-alt"></i>
+                                            <i className="fas fa-sign-out-alt" />
                                             Sign out
                                         </button>
                                     </div>
@@ -360,7 +435,9 @@ export default function DashboardLayout({ children }) {
                     <span>
                         © {new Date().getFullYear()} School Result Portal
                     </span>
-                    <span>Secondary School Result Processing System</span>
+                    <span>
+                        Secondary School Result Processing System
+                    </span>
                 </footer>
             </div>
         </div>

@@ -42,8 +42,9 @@ import Results from '../pages/results/Results';
 import AcademicSessions from '../pages/academic/AcademicSessions';
 
 import SchoolSettings from '../pages/settings/SchoolSettings';
-
 import Assessments from '../pages/assessments/Assessments';
+
+import Schools from '../pages/schools/Schools';
 
 function getRoleName(role) {
     return typeof role === 'string' ? role : role?.name || '';
@@ -51,8 +52,17 @@ function getRoleName(role) {
 
 function hasRole(user, roleName) {
     return (user?.roles || []).some(
-        (role) => getRoleName(role).toLowerCase() === roleName.toLowerCase()
+        (role) =>
+            getRoleName(role).toLowerCase() === roleName.toLowerCase()
     );
+}
+
+function isSuperAdminUser(user) {
+    return hasRole(user, 'Super Admin');
+}
+
+function isSchoolAdminUser(user) {
+    return hasRole(user, 'School Admin');
 }
 
 function isParentUser(user) {
@@ -68,17 +78,38 @@ function isStudentUser(user) {
 }
 
 function getHomePath(user) {
+    if (isSuperAdminUser(user)) return '/schools';
     if (isStudentUser(user)) return '/student';
     if (isParentUser(user)) return '/parent';
     if (isTeacherUser(user)) return '/teacher';
+    if (isSchoolAdminUser(user)) return '/dashboard';
 
-    return '/dashboard';
+    return '/access-denied';
 }
 
 function HomeRedirect() {
     const { user } = useAuth();
 
     return <Navigate to={getHomePath(user)} replace />;
+}
+
+function AccessDenied() {
+    return (
+        <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
+                <i className="fas fa-lock text-xl" />
+            </div>
+
+            <h1 className="text-2xl font-bold text-slate-900">
+                Access Restricted
+            </h1>
+
+            <p className="mt-2 text-sm text-slate-600">
+                Your account does not currently have access to this section.
+                Please contact your school administrator.
+            </p>
+        </div>
+    );
 }
 
 function ParentOnlyRoute() {
@@ -111,53 +142,58 @@ function StudentOnlyRoute() {
     return <Navigate to={getHomePath(user)} replace />;
 }
 
+function SuperAdminOnlyRoute() {
+    const { user } = useAuth();
+
+    if (isSuperAdminUser(user)) {
+        return <Outlet />;
+    }
+
+    return <Navigate to={getHomePath(user)} replace />;
+}
+
+function SchoolAdminOnlyRoute() {
+    const { user } = useAuth();
+
+    if (isSchoolAdminUser(user)) {
+        return <Outlet />;
+    }
+
+    return <Navigate to={getHomePath(user)} replace />;
+}
+
 function ScoreAccessRoute() {
     const { user } = useAuth();
 
-    if (isStudentUser(user) || isParentUser(user)) {
-        return <Navigate to={getHomePath(user)} replace />;
-    }
-
-    return <Outlet />;
-}
-
-function AdminOnlyRoute() {
-    const { user } = useAuth();
-
     if (
-        isStudentUser(user) ||
-        isParentUser(user) ||
-        isTeacherUser(user)
+        isTeacherUser(user) ||
+        isSchoolAdminUser(user)
     ) {
-        return <Navigate to={getHomePath(user)} replace />;
+        return <Outlet />;
     }
 
-    return <Outlet />;
-}
-
-function PlaceholderPage({ title }) {
-    return (
-        <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-            <h1 className="text-2xl font-bold text-slate-900">
-                {title}
-            </h1>
-
-            <p className="mt-2 text-sm text-slate-500">
-                This module will be implemented in a later development phase.
-            </p>
-        </div>
-    );
+    return <Navigate to={getHomePath(user)} replace />;
 }
 
 export default function AppRoutes() {
     return (
         <Routes>
+            {/* Authentication */}
             <Route element={<AuthLayout />}>
                 <Route path="/login" element={<Login />} />
             </Route>
 
+            {/* Protected Application */}
             <Route element={<ProtectedRoute />}>
                 <Route element={<DashboardLayout />}>
+
+                    {/* Super Admin - School Registration Only */}
+                    <Route element={<SuperAdminOnlyRoute />}>
+                        <Route
+                            path="/schools"
+                            element={<Schools />}
+                        />
+                    </Route>
 
                     {/* Student Portal */}
                     <Route element={<StudentOnlyRoute />}>
@@ -183,7 +219,7 @@ export default function AppRoutes() {
                         />
                     </Route>
 
-                    {/* Score Entry */}
+                    {/* Score Entry - Teacher and School Admin */}
                     <Route element={<ScoreAccessRoute />}>
                         <Route
                             path="/scores"
@@ -191,15 +227,19 @@ export default function AppRoutes() {
                         />
                     </Route>
 
-                    {/* Administration Pages */}
-                    <Route element={<AdminOnlyRoute />}>
+                    {/* School Admin - School Operations */}
+                    <Route element={<SchoolAdminOnlyRoute />}>
+
                         <Route
                             path="/dashboard"
                             element={<Dashboard />}
                         />
 
                         {/* Student Management */}
-                        <Route path="/students" element={<Students />} />
+                        <Route
+                            path="/students"
+                            element={<Students />}
+                        />
 
                         <Route
                             path="/students/create"
@@ -222,7 +262,10 @@ export default function AppRoutes() {
                         />
 
                         {/* Class Management */}
-                        <Route path="/classes" element={<Classes />} />
+                        <Route
+                            path="/classes"
+                            element={<Classes />}
+                        />
 
                         <Route
                             path="/classes/:classId"
@@ -230,7 +273,10 @@ export default function AppRoutes() {
                         />
 
                         {/* Subject Management */}
-                        <Route path="/subjects" element={<Subjects />} />
+                        <Route
+                            path="/subjects"
+                            element={<Subjects />}
+                        />
 
                         <Route
                             path="/subjects/create"
@@ -253,7 +299,10 @@ export default function AppRoutes() {
                         />
 
                         {/* Teacher Management */}
-                        <Route path="/teachers" element={<Teachers />} />
+                        <Route
+                            path="/teachers"
+                            element={<Teachers />}
+                        />
 
                         <Route
                             path="/teachers/create"
@@ -271,7 +320,10 @@ export default function AppRoutes() {
                         />
 
                         {/* Result Management */}
-                        <Route path="/results" element={<Results />} />
+                        <Route
+                            path="/results"
+                            element={<Results />}
+                        />
 
                         <Route
                             path="/assessments"
@@ -283,16 +335,31 @@ export default function AppRoutes() {
                             element={<AcademicSessions />}
                         />
 
+                        {/* School Settings */}
                         <Route
                             path="/settings"
                             element={<SchoolSettings />}
                         />
                     </Route>
+
+                    {/* Other roles - restricted until their pages are implemented */}
+                    <Route
+                        path="/access-denied"
+                        element={<AccessDenied />}
+                    />
                 </Route>
             </Route>
 
-            <Route path="/" element={<HomeRedirect />} />
-            <Route path="*" element={<HomeRedirect />} />
+            {/* Default Redirects */}
+            <Route
+                path="/"
+                element={<HomeRedirect />}
+            />
+
+            <Route
+                path="*"
+                element={<HomeRedirect />}
+            />
         </Routes>
     );
 }

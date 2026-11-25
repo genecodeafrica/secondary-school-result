@@ -15,9 +15,9 @@ class SchoolSettingsController extends Controller
         $user = $request->user();
 
         abort_unless(
-            $user && $user->hasAnyRole(['School Admin', 'Super Admin']),
+            $user && $user->hasRole('School Admin'),
             403,
-            'Only school administrators can manage school settings.'
+            'Only the School Admin can manage school settings.'
         );
 
         abort_unless(

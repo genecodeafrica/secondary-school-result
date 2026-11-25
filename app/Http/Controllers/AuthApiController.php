@@ -47,11 +47,24 @@ class AuthApiController extends Controller
             ], 403);
         }
 
-        if (!$user->school_id || !$user->school) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Your account is not associated with a school.',
-            ], 403);
+        // Super Admin does not require a school.
+        if (!$user->hasRole('Super Admin')) {
+
+            // Ensure the user belongs to a registered school.
+            if (!$user->school_id || !$user->school) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your account is not associated with a school.',
+                ], 403);
+            }
+
+            // Prevent login when the school is deactivated.
+            if (!$user->school->status) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This school is currently deactivated. Please contact the Super Admin.',
+                ], 403);
+            }
         }
 
         $user->tokens()->delete();

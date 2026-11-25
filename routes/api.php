@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use Illuminate\Support\Facades\Route;
 
@@ -19,6 +19,7 @@ use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\ParentController;
 use App\Http\Controllers\ParentPortalController;
 use App\Http\Controllers\Api\DashboardController;
+use App\Http\Controllers\SchoolController;
 
 /*
 |--------------------------------------------------------------------------
@@ -431,7 +432,7 @@ Route::middleware('auth:sanctum')->group(function () {
         ResultProcessingController::class,
         'process',
     ])->name('api.results.process');
-    
+
     Route::post('/results/process-class', [
         ResultProcessingController::class,
         'processClass',
@@ -506,6 +507,34 @@ Route::middleware('auth:sanctum')->group(function () {
         'show',
     ])->whereNumber('resultId')
       ->name('api.results.show');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Super Admin - School Registration
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/schools', [
+        SchoolController::class,
+        'index',
+    ])->name('api.schools.index');
+
+    Route::post('/schools', [
+        SchoolController::class,
+        'store',
+    ])->name('api.schools.store');
+
+    Route::put('/schools/{schoolId}', [
+        SchoolController::class,
+        'update',
+    ])->whereNumber('schoolId')->name('api.schools.update');
+
+    Route::patch('/schools/{schoolId}/status', [
+        SchoolController::class,
+        'updateStatus',
+    ])->whereNumber('schoolId')->name('api.schools.status');
+
 
     /*
     |--------------------------------------------------------------------------
